@@ -117,6 +117,46 @@ void make_odds_score(int motif_length){
   }
 }
 
+  //結合部位の探索
+  void hit(int motif_length, int gene_num){
+    struct score{
+      float score;
+      int pos;
+    }match[gene_num];
+    for(int gene_i = 0; gene_i < gene_num; gene_i++){
+      
+      //プロモーターの長さ
+      int pro_length = 0;
+      for(pro_length = 0; pro_length < BUFSIZE; pro_length++){
+        if(g_pro[gene_i].seq[pro_length]=='\0'){break;}
+      }
+
+      //ゲノム配列上の結合部位の探索
+      match[gene_i].score = 0;
+      int end = pro_length - motif_length;
+      for(int start = 0; start < end; start++){
+        int score = 0;
+        for(int i = start; i < start + motif_length; i++){
+          score += log_odds_score[g_pro[gene_i].seq[i]][i-start];
+        }
+
+        if(match[gene_i].score < score){
+          match[gene_i].score = score;
+          match[gene_i].pos = start;
+        }
+      }
+
+      printf("pro:%s\n", g_pro[gene_i].name);
+      printf("pos:%d\n", match[gene_i].pos);
+      printf("hit(");
+      for(int i = match[gene_i].pos; i < match[gene_i].pos + motif_length; i++){
+        printf("%c", g_pro[gene_i].seq[i]);
+      }
+      printf(")= %f\n", match[gene_i].score);
+      printf("\n");
+    }
+  }
+
 int main(int argc, char* argv[]){
   int seq_num = read_multi_seq(argv[1]); //１番目の引数で指定した転写因子の複数の結合部位配列を読み込む
   int gene_num = read_promoter(argv[2]);  //２番目の引数で指定した遺伝子のプロモータ領域を読み込む
@@ -137,7 +177,7 @@ int main(int argc, char* argv[]){
     printf("\n");
   }
     
-make_odds_score(motif_length);
+  make_odds_score(motif_length);
    
   //対数オッズスコアの表示
   for(int i = 0; i < BASE; i++){
@@ -146,5 +186,7 @@ make_odds_score(motif_length);
     }
     printf("\n");
   }
+
+  hit(motif_length, gene_num);
   return 0;
 }
