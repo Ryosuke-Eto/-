@@ -13,6 +13,7 @@
 #define RAND_PRO_NUM 10
 
 enum dna {A,C,G,T};
+char base[BASE] = {'A', 'C', 'G', 'T'};
 char g_motif[MAX_SEQ_NUM][BUFSIZE]; //転写因子の結合部位配列を保存する配列
 int g_fre_table[BASE][BUFSIZE]={0}; //頻度表
 float g_base_fre_table[BASE] = {7519429, 4637676, 4637676, 7519429}; //塩基出現頻度
@@ -105,8 +106,9 @@ void make_fre_table(int seq_num, int motif_length){
 
     //頻度表の表示
     for(int i = 0; i < BASE; i++){
+      printf("%c ", base[i]);
       for(int j = 0; j < motif_length; j++){
-        printf("%d ", g_fre_table[i][j]);
+        printf("%3d ", g_fre_table[i][j]);
       }
       printf("\n");
     }
@@ -135,7 +137,6 @@ void make_odds_score(int motif_length){
   }
 
   //バックグラウンドの出現確率の計算
-  
   float sum_q = 0;
   for(int i = 0; i < BASE; i++){
     sum_q += g_base_fre_table[i];
@@ -154,7 +155,7 @@ void make_odds_score(int motif_length){
   //対数オッズスコアの表示
   for(int i = 0; i < BASE; i++){
     for(int j = 0; j < motif_length; j++){
-        printf("%f ", g_log_odds_score[i][j]);
+        printf("%2.2f ", g_log_odds_score[i][j]);
     }
     printf("\n");
   }
@@ -267,7 +268,7 @@ void make_random_matrix(int motif_length){
 
   float ave_score = cal_ave(rand_score, RAND_PRO_NUM, start);
   float sd_score = cal_sd(rand_score, RAND_PRO_NUM, start, ave_score);
-  printf("%f\n%f\n", ave_score, sd_score);
+  printf("ave:%f\nsd:%f\n", ave_score, sd_score);
 }
 
 
