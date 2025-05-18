@@ -15,10 +15,10 @@
 enum dna {A,C,G,T}; //A, C, G, Tのchar型とint型の対応
 char character_type[CHARACTER_NUM] = {'A', 'C', 'G', 'T'}; // 塩基をchar型からint型に変換する配列
 char g_motif[MAX_SEQ_NUM][BUFSIZE]; //転写因子の結合部位配列を保存する配列
-int g_fre_table[CHARACTER_NUM][BUFSIZE]={0}; //頻度表
-float g_base_fre_table[CHARACTER_NUM] = {7519429, 4637676, 4637676, 7519429}; //塩基出現頻度
-float g_q[CHARACTER_NUM]; //バックグラウンドの出現確率
-float g_log_odds_score[CHARACTER_NUM][BUFSIZE]; //対数オッズスコア表
+double g_fre_table[CHARACTER_NUM][BUFSIZE]={0.0}; //頻度表
+double g_base_fre_table[CHARACTER_NUM] = {7519429.0, 4637676.0, 4637676.0, 7519429.0}; //塩基出現頻度
+double g_q[CHARACTER_NUM]={0.0}; //バックグラウンドの出現確率
+double g_log_odds_score[CHARACTER_NUM][BUFSIZE]={0.0}; //対数オッズスコア表
 struct promoter{
   char name[BUFSIZE];
   char seq[BUFSIZE];
@@ -72,20 +72,11 @@ int read_promoter(char *filename){
 }
 
 //配列の長さの計算
-int matrix_length(void){
+int cal_matrix_length(char matrix[]){
   int length = 0;
   for(length = 0; length < BUFSIZE; length++){
-        if(g_motif[0][length]=='\0'){break;}
+        if(matrix[length]=='\0'){break;}
       }
-  return length;
-}
-
-//プロモーター領域の長さ
-int cal_pro_length(void){
-  int length = 0;
-  for(length = 0; length < BUFSIZE; length++){
-    if(g_pro[0].seq[length]=='\0'){break;}
-  }
   return length;
 }
 
@@ -104,7 +95,7 @@ void make_fre_table(int seq_num, int motif_length){
     for(int i = 0; i < CHARACTER_NUM; i++){
       printf("%c ", character_type[i]);
       for(int j = 0; j < motif_length; j++){
-        printf("%3d ", g_fre_table[i][j]);
+        printf("%5.1f ", g_fre_table[i][j]);
       }
       printf("\n");
     }
@@ -113,6 +104,7 @@ void make_fre_table(int seq_num, int motif_length){
 
 //対数オッズスコア行列の計算
 void make_odds_score(int motif_length){
+
   //疑似頻度1を加える
   for(int i = 0; i < CHARACTER_NUM; i++){
     for(int j = 0; j < motif_length; j++){
@@ -121,9 +113,9 @@ void make_odds_score(int motif_length){
   }
 
   //塩基の出現確率の計算
-  float p[CHARACTER_NUM][motif_length];
+  double p[CHARACTER_NUM][motif_length];
   for(int j = 0; j < motif_length; j++){
-    float sum_p = 0;
+    double sum_p = 0.0;
     for(int i = 0; i < CHARACTER_NUM; i++){
       sum_p += g_fre_table[i][j];
     }
@@ -133,7 +125,7 @@ void make_odds_score(int motif_length){
   }
 
   //バックグラウンドの出現確率の計算
-  float sum_q = 0;
+  double sum_q = 0.0;
   for(int i = 0; i < CHARACTER_NUM; i++){
     sum_q += g_base_fre_table[i];
   }
@@ -159,8 +151,8 @@ void make_odds_score(int motif_length){
 }
 
 //一致度の計算
-float scan(int start, int motif_length, char pro[]){
-  float score = 0;
+double scan(int start, int motif_length, char pro[]){
+  double score = 0.0;
   for(int i = start; i < start + motif_length; i++){
           if(pro[i]=='A'){score += g_log_odds_score[A][i - start];}
           else if(pro[i]=='C'){score += g_log_odds_score[C][i - start];}
@@ -173,18 +165,18 @@ float scan(int start, int motif_length, char pro[]){
 //結合部位の探索
 void hit(int motif_length, int gene_num){
   struct binding_site{
-    float score;
+    double score;
     int pos;
   }b_site[gene_num];  //転写因子結合部位の候補のスコアと位置
+
   for(int gene_i = 0; gene_i < gene_num; gene_i++){
 
     //初期化
-    b_site[gene_i].score = 0;
+    b_site[gene_i].score = 0.0;
     int start = 0;
-    int b_num = 0;
     
       while (g_pro[gene_i].seq[start + motif_length - 1] != '\0'){
-      float score = scan(start, motif_length, g_pro[gene_i].seq);
+      double score = scan(start, motif_length, g_pro[gene_i].seq);
 
       //出力
       if(THRESHOLD < score){
@@ -205,9 +197,9 @@ void hit(int motif_length, int gene_num){
 }
 
 //平均
-float cal_ave(float score_data[][BUFSIZE], int row, int line){
-  float sum = 0;
-  float count = 0;
+double cal_ave(double score_data[][BUFSIZE], int row, int line){
+  double sum = 0.0;
+  double count = 0.0;
   for(int i = 0; i < row; i++){
     for(int j = 0; j < line; j++){
       sum += score_data[i][j];
@@ -218,9 +210,9 @@ float cal_ave(float score_data[][BUFSIZE], int row, int line){
 }
 
 //標準偏差
-float cal_sd(float score_data[][BUFSIZE], int row, int line, float ave){
-  float sd = 0;
-  int count = 0;
+double cal_sd(double score_data[][BUFSIZE], int row, int line, double ave){
+  double sd = 0.0;
+  double count = 0.0;
   for(int i = 0; i < row; i++){
     for(int j = 0; j < line; j++){
       sd += (score_data[i][j] - ave)*(score_data[i][j] - ave);
@@ -235,8 +227,8 @@ float cal_sd(float score_data[][BUFSIZE], int row, int line, float ave){
 void cal_random_score(int motif_length){
   srand((unsigned)time(NULL));
   int start = 0;
-  float rand_score[RAND_PRO_NUM][BUFSIZE];
-  int pro_length = cal_pro_length();
+  double rand_score[RAND_PRO_NUM][BUFSIZE]={0.0};
+  int pro_length = cal_matrix_length(g_pro[0].seq);
   char rand_pro[pro_length];
   for(int rand_num = 0; rand_num < RAND_PRO_NUM; rand_num++){
     for(int i = 0; i < pro_length; i++){
@@ -262,16 +254,16 @@ void cal_random_score(int motif_length){
     } 
   }
 
-  float ave_score = cal_ave(rand_score, RAND_PRO_NUM, start);
-  float sd_score = cal_sd(rand_score, RAND_PRO_NUM, start, ave_score);
+  double ave_score = cal_ave(rand_score, RAND_PRO_NUM, start);
+  double sd_score = cal_sd(rand_score, RAND_PRO_NUM, start, ave_score);
   printf("ave:%f\nsd:%f\n", ave_score, sd_score);
 }
 
 
 int main(int argc, char* argv[]){
   int seq_num = read_multi_seq(argv[1]); //１番目の引数で指定した転写因子の複数の結合部位配列を読み込む
-  int gene_num = read_promoter(argv[2]);  //２番目の引数で指定した遺伝子のプロモータ領域を読み込む
-  int motif_length = matrix_length();　//転写因子の結合部位領域配列の長さの計算
+  int gene_num = read_promoter(argv[2]); //２番目の引数で指定した遺伝子のプロモータ領域を読み込む
+  int motif_length = cal_matrix_length(g_motif[0]); //転写因子の結合部位領域配列の長さの計算
 
   make_fre_table(seq_num, motif_length); //頻度表の計算
   make_odds_score(motif_length); //対数オッズスコアの計算
