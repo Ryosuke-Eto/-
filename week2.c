@@ -8,7 +8,7 @@
 #define MAX_SEQ_NUM 30 //一つの転写因子に対して与えられる結合部位配列の最大数
 #define MAX_GENE_NUM 8 /*与えられるプロモータ領域の最大遺伝子数*/
 #define CHARACTER_NUM 4 //文字の種類数
-#define THRESHOLD 6.5 //閾値
+#define THRESHOLD 4.9 //閾値
 #define RAND_LIMIT 100 //生成する乱数の最大値+1
 #define RAND_PRO_NUM 10 //ランダム配列の数
 
@@ -93,7 +93,7 @@ void make_fre_table(int seq_num, int motif_length){
 
     //頻度表の表示
     for(int i = 0; i < CHARACTER_NUM; i++){
-      printf("%c ", character_type[i]);
+      printf("%c | ", character_type[i]);
       for(int j = 0; j < motif_length; j++){
         printf("%5.1f ", g_fre_table[i][j]);
       }
@@ -142,8 +142,9 @@ void make_odds_score(int motif_length){
 
   //対数オッズスコアの表示
   for(int i = 0; i < CHARACTER_NUM; i++){
+    printf("%c | ", character_type[i]);
     for(int j = 0; j < motif_length; j++){
-        printf("%2.2f ", g_log_odds_score[i][j]);
+        printf("%5.2f ", g_log_odds_score[i][j]);
     }
     printf("\n");
   }
