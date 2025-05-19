@@ -80,14 +80,20 @@ int cal_matrix_length(char matrix[]){
   return length;
 }
 
+//文字の種類の判定
+int check_char(char x){
+  int type = 0;
+  for(type = 0; type < CHARACTER_NUM; type++){
+    if(x == character_type[type]){break;}
+  }
+  return type;
+}
+
 //頻度表の計算
 void make_fre_table(int seq_num, int motif_length){
     for(int i = 0; i < seq_num; i++){
         for(int j = 0; j < motif_length; j++){
-            if(g_motif[i][j]=='A'){g_fre_table[A][j]++;}
-            else if(g_motif[i][j]=='C'){g_fre_table[C][j]++;}
-            else if(g_motif[i][j]=='G'){g_fre_table[G][j]++;}
-            else if(g_motif[i][j]=='T'){g_fre_table[T][j]++;}
+            g_fre_table[check_char(g_motif[i][j])][j]++;
         }
     }
 
@@ -155,11 +161,8 @@ void make_odds_score(int motif_length){
 double scan(int start, int motif_length, char pro[]){
   double score = 0.0;
   for(int i = start; i < start + motif_length; i++){
-          if(pro[i]=='A'){score += g_log_odds_score[A][i - start];}
-          else if(pro[i]=='C'){score += g_log_odds_score[C][i - start];}
-          else if(pro[i]=='G'){score += g_log_odds_score[G][i - start];}
-          else if(pro[i]=='T'){score += g_log_odds_score[T][i - start];}
-        }
+    score += g_log_odds_score[check_char(pro[i])][i - start];
+  }
   return score;
 }
 
