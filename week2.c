@@ -3,14 +3,16 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <stdbool.h>
 
 #define BUFSIZE 1024 //ファイルから読み込む一行の最大文字数
 #define MAX_SEQ_NUM 30 //一つの転写因子に対して与えられる結合部位配列の最大数
 #define MAX_GENE_NUM 8 /*与えられるプロモータ領域の最大遺伝子数*/
 #define CHARACTER_NUM 4 //文字の種類数
-#define THRESHOLD 4.9 //閾値
+#define THRESHOLD 4.9//閾値
 #define RAND_LIMIT 100 //生成する乱数の最大値+1
 #define RAND_PRO_NUM 10 //ランダム配列の数
+#define ERROR_THRESHOLD 0.01 //ランダム配列の出現確率の誤差における閾値
 
 enum dna {A,C,G,T}; //A, C, G, Tのchar型とint型の対応
 char character_type[CHARACTER_NUM] = {'A', 'C', 'G', 'T'}; // 塩基をchar型からint型に変換する配列
@@ -101,7 +103,7 @@ void make_fre_table(int seq_num, int motif_length){
     for(int i = 0; i < CHARACTER_NUM; i++){
       printf("%c | ", character_type[i]);
       for(int j = 0; j < motif_length; j++){
-        printf("%5.1f ", g_fre_table[i][j]);
+        printf("%5.0f ", g_fre_table[i][j]);
       }
       printf("\n");
     }
@@ -137,6 +139,8 @@ void make_odds_score(int motif_length){
   }
   for(int i = 0; i < CHARACTER_NUM; i++){
     g_q[i] = g_base_fre_table[i] / sum_q;
+    printf("%f ", g_q[i]);
+    printf("\n");
   }
 
   //対数オッズスコアの計算
@@ -189,10 +193,13 @@ void hit(int motif_length, int gene_num){
         printf("pro:%s\n", g_pro[gene_i].name);
         printf("pos:%d\n", b_site[gene_i].pos + 1);
         printf("hit(");
+        bool positive = true;
           for(int i = b_site[gene_i].pos; i < b_site[gene_i].pos + motif_length; i++){
-            printf("%c",g_pro[gene_i].seq[i]);
+            if(g_fre_table[check_char(g_pro[gene_i].seq[i])][i] == 1){positive = false;}
+            printf("%c", g_pro[gene_i].seq[i]);
           }
         printf(")=%1.2f\n", b_site[gene_i].score);
+        if(!positive){printf("偽陽性");}
         printf("\n");
       }
       start++;
@@ -227,37 +234,70 @@ double cal_sd(double score_data[][BUFSIZE], int row, int line, double ave){
   sd = sqrt(sd);
 }
 
-//バックグラウンド確率に従ったランダム配列のスコア計算
-void cal_random_score(int motif_length){
-  srand((unsigned)time(NULL));
-  int start = 0;
-  double rand_score[RAND_PRO_NUM][BUFSIZE]={0.0};
-  int pro_length = cal_matrix_length(g_pro[0].seq);
-  char rand_pro[pro_length];
-  for(int rand_num = 0; rand_num < RAND_PRO_NUM; rand_num++){
-    for(int i = 0; i < pro_length; i++){
-      int tmp_rand = rand()%RAND_LIMIT;
-      if(tmp_rand<=30){
-        rand_pro[i] = 'A';
-      }
-      else if(tmp_rand>=31&&tmp_rand<=49){
-        rand_pro[i] = 'C';
-      }
-      else if(tmp_rand>=50&&tmp_rand<=68){
-        rand_pro[i] = 'G';
-      }
-      else if(tmp_rand>=69){
-        rand_pro[i] = 'T';
-      }
+//乱数による文字の生成
+char random_char(double r){
+  double cumulative = 0.0;
+    for(int i = 0; i < CHARACTER_NUM; ++i){
+        cumulative += g_q[i];
+        if(r < cumulative){
+            return character_type[i];
+        }
     }
-    start = 0;
-    while (rand_pro[start + motif_length - 1] != '\0'){
-      rand_score[rand_num][start] = scan(start, motif_length, rand_pro);
-      //printf("%f \n",rand_score[rand_num][start]);
-      start++;
-    } 
+  return character_type[CHARACTER_NUM-1]; //
+}
+
+//ランダム配列の出現確率の誤差計算
+double cal_total_error(int count[], int length){
+  double q_actual[CHARACTER_NUM] = {0.0};
+  for(int i = 0; i < CHARACTER_NUM; i++){
+    q_actual[i] = (double)count[i] / length;
   }
 
+  double total_error = 0.0;
+  for(int i = 0; i < CHARACTER_NUM; i++){
+    total_error += fabs(q_actual[i] - g_q[i]);
+  }
+  return total_error;
+}
+
+//バックグラウンド確率に従ったランダム配列のスコア計算
+void cal_random_score(int motif_length){
+  srand((unsigned)time(NULL)); //乱数の初期化
+  int start = 0;
+  double rand_score[RAND_PRO_NUM][BUFSIZE]={0.0};
+  int pro_length = cal_matrix_length(g_pro[0].seq); //作成するプロモータの長さ
+  char rand_pro[pro_length+1]; //ランダムプロモータ配列を格納する配列
+
+  int rand_num = 0; //生成したランダム配列の本数
+
+  while(rand_num < RAND_PRO_NUM){
+    int count_char[CHARACTER_NUM] = {0}; //ある文字の出現回数を計測する配列
+
+    for(int i = 0; i < pro_length; i++){
+      double tmp_rand = rand() / (RAND_MAX + 1.0); //[0,1)の乱数を生成
+      char x = random_char(tmp_rand); 
+      rand_pro[i] = x;
+
+      for(int k = 0; k < CHARACTER_NUM; k++){
+        if(x == character_type[k]){count_char[k]++;} //出現文字の回数を計測
+      }
+    }
+    rand_pro[pro_length] = '\0'; //終端文字
+
+    double error = cal_total_error(count_char, pro_length); 
+    
+    if(error < ERROR_THRESHOLD){ //ランダム配列が妥当なとき
+      start = 0;
+      while (rand_pro[start + motif_length - 1] != '\0'){ //全ての部分配列のスコア計算
+        rand_score[rand_num][start] = scan(start, motif_length, rand_pro);
+        start++;
+      }
+
+      rand_num++; //生成したランダム配列の個数を加算
+    }
+  }
+    
+  //平均値と標準偏差の計算
   double ave_score = cal_ave(rand_score, RAND_PRO_NUM, start);
   double sd_score = cal_sd(rand_score, RAND_PRO_NUM, start, ave_score);
   printf("ave:%f\nsd:%f\n", ave_score, sd_score);
@@ -273,6 +313,6 @@ int main(int argc, char* argv[]){
   make_odds_score(motif_length); //対数オッズスコアの計算
   hit(motif_length, gene_num); //転写因子結合部位の予測
   cal_random_score(motif_length); //ランダム配列のスコアの計算
-
+  
   return 0;
 }
