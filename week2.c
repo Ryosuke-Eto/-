@@ -14,7 +14,6 @@
 #define RAND_PRO_NUM 10 //ランダム配列の数
 #define ERROR_THRESHOLD 0.01 //ランダム配列の出現確率の誤差における閾値
 
-enum dna {A,C,G,T}; //A, C, G, Tのchar型とint型の対応
 char character_type[CHARACTER_NUM] = {'A', 'C', 'G', 'T'}; // 塩基をchar型からint型に変換する配列
 char g_motif[MAX_SEQ_NUM][BUFSIZE]; //転写因子の結合部位配列を保存する配列
 double g_fre_table[CHARACTER_NUM][BUFSIZE]={0.0}; //頻度表
@@ -264,7 +263,7 @@ double cal_total_error(int count[], int length){
 void cal_random_score(int motif_length){
   srand((unsigned)time(NULL)); //乱数の初期化
   int start = 0;
-  double rand_score[RAND_PRO_NUM][BUFSIZE]={0.0};
+  double rand_score[RAND_PRO_NUM][BUFSIZE]={0.0}; //ランダム配列のスコアを格納する配列
   int pro_length = cal_matrix_length(g_pro[0].seq); //作成するプロモータの長さ
   char rand_pro[pro_length+1]; //ランダムプロモータ配列を格納する配列
 
