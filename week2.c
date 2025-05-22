@@ -11,7 +11,7 @@
 #define CHARACTER_NUM 4 //文字の種類数
 #define THRESHOLD 4.9//閾値
 #define RAND_LIMIT 100 //生成する乱数の最大値+1
-#define RAND_PRO_NUM 10 //ランダム配列の数
+#define RAND_PRO_NUM 100 //ランダム配列の数
 #define ERROR_THRESHOLD 0.01 //ランダム配列の出現確率の誤差における閾値
 
 char character_type[CHARACTER_NUM] = {'A', 'C', 'G', 'T'}; // 塩基をchar型からint型に変換する配列
