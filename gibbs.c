@@ -12,6 +12,7 @@ char character_type[CHARACTER_NUM] = {'A', 'C', 'G', 'T'}; // 塩基をchar型�
 double g_base_fre_table[CHARACTER_NUM] = {7519429.0, 4637676.0, 4637676.0, 7519429.0}; //塩基出現頻度
 double g_q[CHARACTER_NUM]={0.0}; //バックグラウンドの出現確率
 double g_score[CHARACTER_NUM][MOTIF_LENGTH]={0.0}; //スコア行列
+double g_motif_score[BUFSIZE] = {1.0}; //選んだ一本の全スコア
 struct promoter{
   char name[BUFSIZE];
   char seq[BUFSIZE];
@@ -87,7 +88,7 @@ void cal_back_q(void){
 }
 
 //モチーフ位置からのスコア行列の計算
-void cal_motif_score(int selected_num, int matrix_n){
+void make_score_matrix(int selected_num, int matrix_n){
 
   //スコア行列の初期化
   for(int i = 0; i < CHARACTER_NUM; i++){
@@ -120,10 +121,28 @@ void cal_motif_score(int selected_num, int matrix_n){
     for(int j = 0; j < MOTIF_LENGTH; j++){
       g_score[i][j]++; //疑似頻度1を加算
       g_score[i][j] /= (matrix_n - 1); //出現確率の計算
+      
+      printf("%1.5f ", g_score[i][j]);
       g_score[i][j] /= g_q[i]; //スコア行列の計算
-      //printf("%1.5f ", g_score[i][j]);
     }
   }
+}
+
+//選んだ一本の全部分配列のスコアの計算
+void cal_motif_score(int selected_num){
+
+  int start = 0;
+  while(g_pro[selected_num].seq[start + MOTIF_LENGTH -1] != '\0'){
+    g_motif_score[start] = 1.0; //初期化
+    for(int i = start; i < start + MOTIF_LENGTH; i++){
+      g_motif_score[start] *= g_score[check_char(g_pro[selected_num].seq[i])][i - start];
+    }
+    start++;
+  }
+  //表示
+  // for(int i = 0; i < 494; i++){
+  //   printf("%f ", g_motif_score[i]);
+  // }
 }
 
 //ギブスサンプリングによる結合部位の発見
@@ -131,8 +150,8 @@ int gibbs_scan(int matrix_n){
   init_pos(matrix_n);
 
   for(int gene_i = 0; gene_i < matrix_n; gene_i++){ //プロモータの中から一本選ぶ
-    cal_motif_score(gene_i, matrix_n); //選んだ1本以外の配列からスコア行列を作成
-
+    make_score_matrix(gene_i, matrix_n); //選んだ1本以外の配列からスコア行列を作成
+    cal_motif_score(gene_i); //選んだ1本の全ての位置のスコアを計算
   }
 
 
