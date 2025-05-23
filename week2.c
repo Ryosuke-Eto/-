@@ -9,7 +9,7 @@
 #define MAX_SEQ_NUM 30 //一つの転写因子に対して与えられる結合部位配列の最大数
 #define MAX_GENE_NUM 8 /*与えられるプロモータ領域の最大遺伝子数*/
 #define CHARACTER_NUM 4 //文字の種類数
-#define THRESHOLD 4.9//閾値
+#define THRESHOLD 6.11//閾値
 #define RAND_LIMIT 100 //生成する乱数の最大値+1
 #define RAND_PRO_NUM 100 //ランダム配列の数
 #define ERROR_THRESHOLD 0.01 //ランダム配列の出現確率の誤差における閾値
@@ -310,6 +310,7 @@ int main(int argc, char* argv[]){
 
   make_fre_table(seq_num, motif_length); //頻度表の計算
   make_odds_score(motif_length); //対数オッズスコアの計算
+  printf("%s\n", argv[1]);
   hit(motif_length, gene_num); //転写因子結合部位の予測
   cal_random_score(motif_length); //ランダム配列のスコアの計算
   
