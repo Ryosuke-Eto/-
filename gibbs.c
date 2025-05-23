@@ -68,8 +68,6 @@ int check_char(char x){
 
 //出現位置の初期化
 void init_pos(int matrix_n){
-  
-
   for(int gene_i = 0; gene_i < matrix_n; gene_i++){
     int pro_length = cal_matrix_length(g_pro[gene_i].seq); //プロモーター配列の長さ
     int rand_limit = pro_length - MOTIF_LENGTH + 1;
@@ -128,22 +126,34 @@ void make_score_matrix(int selected_num, int matrix_n){
 
 //選んだ一本の全部分配列のスコアの計算と次のモチーフ位置の更新
 void cal_motif_score(int selected_num){
-  double best_score = -1.0;
+  double m_score[BUFSIZE] = {-1.0};
   int start = 0;
 
   while(g_pro[selected_num].seq[start + MOTIF_LENGTH -1] != '\0'){
-    double tmp_score = 0.0;
     
     for(int i = start; i < start + MOTIF_LENGTH; i++){ //スコアの加算
-      tmp_score += g_score[check_char(g_pro[selected_num].seq[i])][i - start];
+      m_score[start] += g_score[check_char(g_pro[selected_num].seq[i])][i - start];
     }
-
-    if(best_score < tmp_score){
-      g_pro[selected_num].pos = start; //スタート位置の更新
-      best_score = tmp_score; //スコアの更新
-    } 
     start++;
   }
+
+  double sum_score = 0.0;
+  for(int i = 0; i < start; i++){
+    m_score[i] = exp(m_score[i]);
+    sum_score += m_score[i];
+  }
+
+  double r = ((double)rand()) / RAND_MAX;
+  double cumulative = 0.0;
+    for(int i = 0; i <= start; i++){
+      cumulative += m_score[i] / sum_score;
+      if(r <= cumulative){
+        g_pro[selected_num].pos = i; //スタート位置の更新
+        break;
+      }
+    }
+
+  
 }
 
 //ギブスサンプリングによって見つかった配列のスコア
@@ -221,7 +231,7 @@ void gibbs_scan(int matrix_n){
     }
     int score = cal_gibbs_score(matrix_n);
     printf("%d, %d\n",all_loop, score);
-    if(score > best_motif_score){ //スコアをベスト上回ったとき
+    if(score > best_motif_score){ //スコアのベスト上回ったとき
       
       best_motif_score = score;
       for(int gene_i = 0; gene_i < matrix_n; gene_i++){
