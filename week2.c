@@ -194,7 +194,7 @@ void hit(int motif_length, int gene_num){
         printf("hit(");
         bool positive = true;
           for(int i = b_site[gene_i].pos; i < b_site[gene_i].pos + motif_length; i++){
-            if(g_fre_table[check_char(g_pro[gene_i].seq[i])][i] == 1){positive = false;}
+            if(g_fre_table[check_char(g_pro[gene_i].seq[i])][i]-1 == false){positive = false;}
             printf("%c", g_pro[gene_i].seq[i]);
           }
         printf(")=%1.2f\n", b_site[gene_i].score);

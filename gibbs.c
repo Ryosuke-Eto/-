@@ -8,11 +8,14 @@
 #define MAX_GENE_NUM 20 /*与えられるプロモータ領域の最大遺伝子数*/
 #define MOTIF_LENGTH 7 //モチーフ長
 #define CHARACTER_NUM 4 //文字の種類数
+#define LOOP_NUM 1000 //ギブスサンプリング繰り返し回数
+#define PERCENT 100
 
 char character_type[CHARACTER_NUM] = {'A', 'C', 'G', 'T'}; // 塩基をchar型からint型に変換する配列
 double g_base_fre_table[CHARACTER_NUM] = {7519429.0, 4637676.0, 4637676.0, 7519429.0}; //塩基出現頻度
 double g_q[CHARACTER_NUM]={0.0}; //バックグラウンドの出現確率
 double g_score[CHARACTER_NUM][MOTIF_LENGTH]={0.0}; //スコア行列
+double con_seq[CHARACTER_NUM][MOTIF_LENGTH]={0.0}; //モチーフ配列の出現頻度確率
 struct promoter{
   char name[BUFSIZE];
   char seq[BUFSIZE];
@@ -82,8 +85,6 @@ void cal_back_q(void){
   }
   for(int i = 0; i < CHARACTER_NUM; i++){
     g_q[i] = g_base_fre_table[i] / sum_q;
-    printf("%f ", g_q[i]);
-    printf("\n");
   }
 }
 
@@ -108,16 +109,15 @@ void make_score_matrix(int selected_num, int matrix_n){
   }
   
   //スコアの表示
-  for(int i = 0; i < CHARACTER_NUM; i++){
+  /*for(int i = 0; i < CHARACTER_NUM; i++){
     printf("\n");
     for(int j = 0; j < MOTIF_LENGTH; j++){
       printf("%5.0f ", g_score[i][j]);
     }
-  }
+  }*/
 
   //スコア行列の計算
   for(int i = 0; i < CHARACTER_NUM; i++){
-    printf("\n");
     for(int j = 0; j < MOTIF_LENGTH; j++){
       g_score[i][j]++; //疑似頻度1を加算
       g_score[i][j] /= (matrix_n - 1); //出現確率pの計算
@@ -146,21 +146,52 @@ void cal_motif_score(int selected_num){
   }
 }
 
+//ギブスサンプリング結果の表示
+void print_result(int matrix_n){
+  for(int gene_i = 0; gene_i < matrix_n; gene_i++){
+    printf("\n");
+    printf("pro:%s\n", g_pro[gene_i].name);
+    printf("pos:%d\n", g_pro[gene_i].pos+1);
+    for(int i = 0; i < MOTIF_LENGTH; i++){
+      printf("%c", g_pro[gene_i].seq[i+g_pro[gene_i].pos]);
+    }
+    printf("\n");
+  }
+}
+
+//モチーフ配列のコンセンサス配列の計算
+void cal_consensus(int matrix_n){
+  //出現頻度の計算
+  for(int gene_i = 0; gene_i < matrix_n; gene_i++){
+    for(int i = 0; i < MOTIF_LENGTH; i++){
+      con_seq[check_char(g_pro[gene_i].seq[i])][i]++; 
+    }
+  }
+
+  //計算と表示
+  for(int type = 0; type < CHARACTER_NUM; type++){
+    printf("%c |", character_type[type]);
+    for(int i = 0; i < MOTIF_LENGTH; i++){
+      con_seq[type][i] = con_seq[type][i] * PERCENT / matrix_n; //割合の計算(%)
+      printf("%5.0f ", con_seq[type][i]);
+    }
+    printf("\n");
+  }
+}
+
 //ギブスサンプリングによる結合部位の発見
 int gibbs_scan(int matrix_n){
   init_pos(matrix_n);
 
-  for(int i = 0; i < 1000; i++){
+  for(int i = 0; i < LOOP_NUM; i++){
     for(int gene_i = 0; gene_i < matrix_n; gene_i++){ //プロモータの中から一本選ぶ
     make_score_matrix(gene_i, matrix_n); //選んだ1本以外の配列からスコア行列を作成
     cal_motif_score(gene_i); //選んだ1本の全ての位置のスコアを計算
     }
   }
 
-  for(int gene_i = 0; gene_i < matrix_n; gene_i++){
-    printf("%s\n", g_pro[gene_i].name);
-    printf("%d\n", g_pro[gene_i].pos);
-  }
+  print_result(matrix_n);
+  cal_consensus(matrix_n);
 }
 
 int main(int argc, char* argv[]){
