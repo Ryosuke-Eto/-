@@ -128,45 +128,33 @@ void make_score_matrix(int selected_num, int matrix_n){
 
 //選んだ一本の全部分配列のスコアの計算と次のモチーフ位置の更新
 void cal_motif_score(int selected_num){
-  double best_score = -1.0;
+  double m_score[BUFSIZE]={0.0};
   int start = 0;
 
   while(g_pro[selected_num].seq[start + MOTIF_LENGTH -1] != '\0'){
-    double tmp_score = 0.0;
     
     for(int i = start; i < start + MOTIF_LENGTH; i++){ //スコアの加算
-      tmp_score += g_score[check_char(g_pro[selected_num].seq[i])][i - start];
+      m_score[start] += g_score[check_char(g_pro[selected_num].seq[i])][i - start];
     }
-
-    if(best_score < tmp_score){
-      g_pro[selected_num].pos = start; //スタート位置の更新
-      best_score = tmp_score; //スコアの更新
-    } 
     start++;
   }
-}
-
-//ギブスサンプリングによって見つかった配列のスコア
-int cal_gibbs_score(int matrix_n){
-  int score = 0;
-
-  for(int i = 0; i < MOTIF_LENGTH; i++){
-    int count[CHARACTER_NUM] = {0};
-    for(int gene_i = 0; gene_i < matrix_n; gene_i++){
-      count[check_char(g_pro[gene_i].seq[i + g_pro[gene_i].pos])]++; //出現回数を加算
-    }
-
-    int max_count = count[0];
-    for(int type = 1; type < CHARACTER_NUM; type++){
-      if(max_count < count[type]){
-        max_count = count[type];
+  double best_score = 0.0;
+  if(rand()%2==0){
+    for(int i = 0; i < BUFSIZE; i++){
+      if(best_score < m_score[i]){
+        g_pro[selected_num].pos = i; //スタート位置の更新
+        best_score = m_score[i]; //スコアの更新
       }
     }
-
-    score += max_count;
+  }else{
+    for(int i = BUFSIZE; i >= 0; i--){
+      if(best_score < m_score[i]){
+        g_pro[selected_num].pos = i; //スタート位置の更新
+        best_score = m_score[i]; //スコアの更新
+      }
+    }
   }
   
-  return score;
 }
 
 //ギブスサンプリング結果の表示
@@ -205,34 +193,17 @@ void cal_consensus(int matrix_n){
 
 //ギブスサンプリングによる結合部位の発見
 void gibbs_scan(int matrix_n){
+  init_pos(matrix_n); //モチーフ位置の初期化
   
-  struct promoter best_motif[matrix_n]; //最良のモチーフ
   int best_motif_score = -1; //見つかったモチーフ配列のスコア
-  int all_loop = 0; 
-  
-  for(all_loop = 0; all_loop < LOOP_TRIALS; all_loop++){
-    srand((unsigned)time(NULL) + all_loop);
-    init_pos(matrix_n); //モチーフ位置の初期化
+    srand((unsigned)time(NULL));
     for(int i = 0; i < LOOP_NUM; i++){
-      for(int gene_i = 0; gene_i < matrix_n; gene_i++){ //プロモータの中から一本選ぶ
-        make_score_matrix(gene_i, matrix_n); //選んだ1本以外の配列からスコア行列を作成
-        cal_motif_score(gene_i); //選んだ1本の全ての位置のスコアを計算と次の位置の更新
-      }
+      int gene_i = rand() % matrix_n;//プロモータの中から一本選ぶ
+      make_score_matrix(gene_i, matrix_n); //選んだ1本以外の配列からスコア行列を作成
+      cal_motif_score(gene_i); //選んだ1本の全ての位置のスコアを計算と次の位置の更新
     }
-    int score = cal_gibbs_score(matrix_n);
-    printf("%d, %d\n",all_loop, score);
-    if(score > best_motif_score){ //スコアをベスト上回ったとき
-      
-      best_motif_score = score;
-      for(int gene_i = 0; gene_i < matrix_n; gene_i++){
-        best_motif[gene_i] = g_pro[gene_i]; // 構造体の保存
-      }
+    
 
-    }
-  }
-  for(int gene_i = 0; gene_i < matrix_n; gene_i++){
-    g_pro[gene_i] = best_motif[gene_i];
-  }
   print_result(matrix_n);
   cal_consensus(matrix_n);
 }
