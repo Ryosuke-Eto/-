@@ -9,7 +9,7 @@
 #define MAX_SEQ_NUM 30 //一つの転写因子に対して与えられる結合部位配列の最大数
 #define MAX_GENE_NUM 8 /*与えられるプロモータ領域の最大遺伝子数*/
 #define CHARACTER_NUM 4 //文字の種類数
-#define THRESHOLD 6.11//閾値
+#define THRESHOLD 5.436246852 //閾値
 #define RAND_LIMIT 100 //生成する乱数の最大値+1
 #define RAND_PRO_NUM 100 //ランダム配列の数
 #define ERROR_THRESHOLD 0.01 //ランダム配列の出現確率の誤差における閾値
@@ -192,14 +192,15 @@ void hit(int motif_length, int gene_num){
         printf("pro:%s\n", g_pro[gene_i].name);
         printf("pos:%d\n", b_site[gene_i].pos + 1);
         printf("hit(");
+        
         bool positive = true;
           for(int i = b_site[gene_i].pos; i < b_site[gene_i].pos + motif_length; i++){
-            if(g_fre_table[check_char(g_pro[gene_i].seq[i])][i]-1 == false){positive = false;}
+            if(g_fre_table[check_char(g_pro[gene_i].seq[i])][i]-1 == false){positive = false;} //コンセンサス配列が0だが選ばれた配列のときpositiveをfalseにする
             printf("%c", g_pro[gene_i].seq[i]);
           }
         printf(")=%1.2f\n", b_site[gene_i].score);
-        if(!positive){printf("偽陽性");}
-        printf("\n");
+        if(!positive){printf("偽陽性");} //positiveがfalseのとき偽陽性と表示
+        printf("\n"); 
       }
       start++;
     }
